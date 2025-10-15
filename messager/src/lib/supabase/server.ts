@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export async function createClient() {
-  // In some Next.js versions, cookies() is async
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -20,6 +19,6 @@ export async function createClient() {
           cookieStore.set({ name, value: "", ...options });
         },
       },
-    }
+    } // ← make sure this is a single closing brace
   );
 }

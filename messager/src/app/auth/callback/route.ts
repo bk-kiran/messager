@@ -15,3 +15,4 @@ export async function GET(request: Request) {
   if (err) return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(err)}`);
   return NextResponse.redirect(`${origin}${next}`);
 }
+
