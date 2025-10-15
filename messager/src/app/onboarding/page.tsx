@@ -5,11 +5,9 @@ import OnboardingForm from "./ui/OnboardingForm";
 export default async function OnboardingPage() {
   const supabase = await createClient();
 
-  // Must be logged in
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // If profile already exists, skip this step
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")
@@ -18,5 +16,9 @@ export default async function OnboardingPage() {
 
   if (profile) redirect("/");
 
-  return <OnboardingForm />;
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-4">
+      <OnboardingForm />
+    </div>
+  );
 }

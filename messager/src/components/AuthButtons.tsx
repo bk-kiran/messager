@@ -1,3 +1,4 @@
+// src/components/AuthButtons.tsx
 "use client";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -5,12 +6,11 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 export function SignInWithGoogleButton() {
   const onClick = async () => {
     const supabase = supabaseBrowser();
-    // Start the Google OAuth flow
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { prompt: "select_account" }, // lets user pick account each time
+        queryParams: { prompt: "select_account" },
       },
     });
   };
@@ -18,7 +18,7 @@ export function SignInWithGoogleButton() {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg border-2 border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow"
+      className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg border-2 cursor-pointer border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path
@@ -46,16 +46,19 @@ export function SignInWithGoogleButton() {
 export function SignOutButton() {
   const onClick = async () => {
     const supabase = supabaseBrowser();
-    await supabase.auth.signOut(); // removes Supabase session cookies
-    window.location.href = "/login"; // redirect to login after sign-out
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   };
 
   return (
     <button
       onClick={onClick}
-      className="px-3 py-2 rounded border hover:bg-gray-50 transition"
+      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium cursor-pointer hover:bg-red-50 transition-all flex items-center gap-2"
     >
-      Sign out
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      Sign Out
     </button>
   );
 }
