@@ -24,6 +24,7 @@ export default async function Home() {
     <main className="p-6 space-y-4">
       <h1 className="text-xl font-semibold">Welcome, {profile.display_name}</h1>
       {profile.bio && <p className="text-gray-600">{profile.bio}</p>}
+      <a className="underline" href="/groups">Go to Groups</a>
       <SignOutButton />
     </main>
   );
