@@ -1,146 +1,52 @@
+// src/app/groups/[id]/page.tsx
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import Link from "next/link";
+import { redirect, notFound } from "next/navigation";
+import ChatClient from "./ui/ChatClient";
 
-export default async function GroupsPage() {
+export default async function GroupChatPage(
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const supabase = await createClient();
+
   const { data: { user } } = await supabase.auth.getUser();
-  
   if (!user) redirect("/login");
 
-  console.log("Fetching groups for user:", user.id);
-
-  // groups I belong to
-  const { data: memberships, error } = await supabase
+  // verify membership
+  const { data: membership } = await supabase
     .from("group_members")
-    .select(`
-      group_id,
-      role,
-      groups:group_id (
-        id,
-        name,
-        description,
-        created_at
-      )
-    `)
-    .eq("user_id", user.id);
+    .select("group_id")
+    .eq("group_id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  console.log("Groups query result:", { 
-    count: memberships?.length, 
-    error 
-  });
+  if (!membership) notFound();
 
-  const groups = memberships?.map(m => ({
-    ...(m.groups as any),
-    role: m.role
-  })) ?? [];
+  // initial messages
+  const { data: messages } = await supabase
+    .from("messages")
+    .select("id, content, sender_id, created_at")
+    .eq("group_id", id)
+    .order("created_at", { ascending: true })
+    .limit(50);
 
+  const senderIds = Array.from(new Set((messages ?? [])
+    .map(m => m.sender_id)
+    .filter(Boolean))) as string[];
+
+  const { data: profiles } = senderIds.length
+    ? await supabase.from("profiles").select("id, display_name").in("id", senderIds)
+    : { data: [] as any[] };
+
+  // ✅ Pass ONLY serializable data to the client component
   return (
-    <main className="max-w-2xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Your Groups</h1>
-        <Link 
-          href="/"
-          className="text-sm text-gray-600 hover:text-gray-900 underline"
-        >
-          ← Back to Home
-        </Link>
-      </div>
-
-      <CreateGroupForm />
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 text-red-800">
-          <p className="font-medium">Error loading groups:</p>
-          <p className="text-sm">{error.message}</p>
-        </div>
-      )}
-
-      {groups.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <p>You haven't joined any groups yet.</p>
-          <p className="text-sm mt-2">Create one above to get started!</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-            {groups.length} {groups.length === 1 ? 'Group' : 'Groups'}
-          </h2>
-          <ul className="space-y-2">
-            {groups.map((group: any) => (
-              <li key={group.id} className="border rounded-lg hover:bg-gray-50 transition">
-                <Link 
-                  href={`/groups/${group.id}`}
-                  className="block p-4"
-                  onClick={(e) => {
-                    console.log("Navigating to group:", group.id);
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-lg">{group.name}</h3>
-                      {group.description && (
-                        <p className="text-sm text-gray-600 mt-1">{group.description}</p>
-                      )}
-                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                        <span className="bg-gray-100 px-2 py-1 rounded">
-                          {group.role}
-                        </span>
-                        <span>
-                          Created {new Date(group.created_at).toLocaleDateString()}
-                        </span>
-                        <span className="font-mono">
-                          {group.id.slice(0, 8)}
-                        </span>
-                      </div>
-                    </div>
-                    <svg 
-                      className="w-5 h-5 text-gray-400" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M9 5l7 7-7 7" 
-                      />
-                    </svg>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+    <main className="max-w-3xl mx-auto p-4">
+      <h1 className="text-xl font-semibold mb-4">Group {id.slice(0, 8)}</h1>
+      <ChatClient
+        groupId={id}
+        initialMessages={messages ?? []}
+        profiles={profiles ?? []}
+      />
     </main>
-  );
-}
-
-function CreateGroupForm() {
-  return (
-    <form action="/groups/create" method="post" className="space-y-3">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Create a new group
-        </label>
-        <div className="flex gap-2">
-          <input 
-            id="name"
-            name="name" 
-            placeholder="Group name"
-            className="border rounded px-3 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-black" 
-            required 
-          />
-          <button 
-            type="submit"
-            className="px-4 py-2 rounded bg-black text-white hover:bg-gray-800 transition"
-          >
-            Create
-          </button>
-        </div>
-      </div>
-    </form>
   );
 }
