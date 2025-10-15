@@ -5,10 +5,13 @@ import Link from "next/link";
 export default async function GroupsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  
   if (!user) redirect("/login");
 
+  console.log("Fetching groups for user:", user.id);
+
   // groups I belong to
-  const { data: memberships } = await supabase
+  const { data: memberships, error } = await supabase
     .from("group_members")
     .select(`
       group_id,
@@ -20,8 +23,12 @@ export default async function GroupsPage() {
         created_at
       )
     `)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .eq("user_id", user.id);
+
+  console.log("Groups query result:", { 
+    count: memberships?.length, 
+    error 
+  });
 
   const groups = memberships?.map(m => ({
     ...(m.groups as any),
@@ -42,6 +49,13 @@ export default async function GroupsPage() {
 
       <CreateGroupForm />
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded p-4 text-red-800">
+          <p className="font-medium">Error loading groups:</p>
+          <p className="text-sm">{error.message}</p>
+        </div>
+      )}
+
       {groups.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <p>You haven't joined any groups yet.</p>
@@ -54,8 +68,14 @@ export default async function GroupsPage() {
           </h2>
           <ul className="space-y-2">
             {groups.map((group: any) => (
-              <li key={group.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                <Link href={`/groups/${group.id}`} className="block">
+              <li key={group.id} className="border rounded-lg hover:bg-gray-50 transition">
+                <Link 
+                  href={`/groups/${group.id}`}
+                  className="block p-4"
+                  onClick={(e) => {
+                    console.log("Navigating to group:", group.id);
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h3 className="font-medium text-lg">{group.name}</h3>
@@ -68,6 +88,9 @@ export default async function GroupsPage() {
                         </span>
                         <span>
                           Created {new Date(group.created_at).toLocaleDateString()}
+                        </span>
+                        <span className="font-mono">
+                          {group.id.slice(0, 8)}
                         </span>
                       </div>
                     </div>
