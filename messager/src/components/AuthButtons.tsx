@@ -1,3 +1,5 @@
+"use client";
+
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 export function SignInWithGoogleButton() {
